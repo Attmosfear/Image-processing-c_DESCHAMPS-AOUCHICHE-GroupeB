@@ -118,3 +118,4 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
     return image;
 
 }
+
