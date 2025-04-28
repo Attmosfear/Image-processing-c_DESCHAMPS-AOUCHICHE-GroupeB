@@ -11,9 +11,10 @@
 
 
 t_bmp8 *bmp8_loadImage(const char *filename){
-  // Allocation de la memoir pour l'image
+  // Allocation de la memoire pour l'image
   t_bmp8 * image = malloc(sizeof(t_bmp8));
-  // On ouvre le fichier
+
+  // Nous ouvrons le fichier en mode binaire
   FILE *f = fopen(filename, "rb");
   if (f == NULL) {
     return NULL;
