@@ -3,6 +3,8 @@
 //
 
 #include "bmp24.h"
+
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,7 +69,6 @@ void bmp24_readPixelValue (t_bmp24 * image, int x, int y, FILE * file) {
 }
 
 void bmp24_readPixelData (t_bmp24 * image, FILE * file) {
-
     for (int x = 0; x < image->height; x++){
         for (int y = 0; y < image->width; y++){
             bmp24_readPixelValue(image, x, y, file);
@@ -108,8 +109,8 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
     t_bmp24 *image = bmp24_allocate(width, height, colorDepth);
 
     //Recuperation du Header et des Infos
-    file_rawRead(HEADER_SIZE, &image->header, sizeof(t_bmp_header), 1, f);
-    file_rawRead(INFO_SIZE, &image->header_info, sizeof(t_bmp_info), 1, f);
+    file_rawRead(0, &image->header, HEADER_SIZE, 1, f);
+    file_rawRead(HEADER_SIZE, &image->header_info, INFO_SIZE, 1, f);
 
     //Recuperation de la data
     bmp24_readPixelData(image, f);
@@ -117,5 +118,17 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
     fclose(f);
     return image;
 
+}
+
+void bmp24_saveImage (t_bmp24 * img, const char * filename) {
+    FILE * f = fopen(filename, "rb");
+    if (f ==  NULL) {
+        printf("Erreur : impossoble de lire le fichier %s", filename);
+        return;
+    }
+    file_rawWrite(0, &img->header, HEADER_SIZE, 1, f);
+    file_rawWrite(HEADER_SIZE, &img->header_info, INFO_SIZE, 1, f);
+    bmp24_writePixelData(img, f);
+    fclose(f);
 }
 

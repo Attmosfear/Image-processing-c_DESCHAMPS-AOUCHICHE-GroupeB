@@ -82,5 +82,7 @@ void bmp24_writePixelData (t_bmp24 * image, FILE * file);
 t_bmp24 * bmp24_loadImage (const char * filename);
 void bmp24_saveImage (t_bmp24 * img, const char * filename);
 
+void bmp24_negative (t_bmp24 * img);
+
 
 #endif //BMP24_H
