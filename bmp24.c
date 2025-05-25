@@ -121,7 +121,7 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
 }
 
 void bmp24_saveImage (t_bmp24 * img, const char * filename) {
-    FILE * f = fopen(filename, "rb");
+    FILE * f = fopen(filename, "wb");
     if (f ==  NULL) {
         printf("Erreur : impossoble de lire le fichier %s", filename);
         return;
@@ -132,3 +132,71 @@ void bmp24_saveImage (t_bmp24 * img, const char * filename) {
     fclose(f);
 }
 
+void bmp24_negative (t_bmp24 * img) {
+    for (int i = 0; i<img->height; i++) {
+        for (int j = 0; j< img->width; j++) {
+            t_pixel pixel = img->data[i][j];
+            pixel.blue = 255 - pixel.blue;
+            pixel.red = 255 - pixel.red;
+            pixel.green = 255 - pixel.green;
+        }
+    }
+}
+
+void bmp24_brightness (t_bmp24 * img, int value) {
+    for (int i = 0; i<img->height; i++) {
+        for (int j = 0; j< img->width; j++) {
+            t_pixel pixel = img->data[i][j];
+            pixel.blue = pixel.blue+value;
+            if (pixel.blue > 255) {
+                pixel.blue = 255;
+            }
+            if (pixel.blue < 0) {
+                pixel.blue = 0;
+            }
+            pixel.red = pixel.red + value;
+            if (pixel.red > 255) {
+                pixel.red = 255;
+            }
+            if (pixel.red < 0) {
+                pixel.red = 0;
+            }
+            pixel.green = pixel.green + value;
+            if (pixel.green > 55) {
+                pixel.green = 255;
+            }
+            if (pixel.green < 0) {
+                pixel.green = 0;
+            }
+        }
+    }
+}
+
+t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int kernelSize) {
+    int n = kernelSize / 2;  // Rayon du noyau
+
+    float sommeR = 0, sommeG = 0, sommeB = 0;
+
+    for (int k = -n; k <= n; k++) {
+        for (int l = -n; l <= n; l++) {
+            // Coordonnées du pixel dans l'image
+            int img_y = y + k;
+            int img_x = x + l;
+
+            // Coordonnées dans le kernel
+            int kernel_i = k + n;
+            int kernel_j = l + n;
+
+            sommeR += img->data[img_y][img_x].red * kernel[kernel_i][kernel_j];
+            sommeG += img->data[img_y][img_x].green * kernel[kernel_i][kernel_j];
+            sommeB += img->data[img_y][img_x].blue * kernel[kernel_i][kernel_j];
+        }
+    }
+
+    t_pixel result;
+    result.red = (uint8_t)((sommeR < 0) ? 0 : (sommeR > 255) ? 255 : sommeR);
+    result.green = (uint8_t)((sommeG < 0) ? 0 : (sommeG > 255) ? 255 : sommeG);
+    result.blue = (uint8_t)((sommeB < 0) ? 0 : (sommeB > 255) ? 255 : sommeB);
+
+    return result;
+}
