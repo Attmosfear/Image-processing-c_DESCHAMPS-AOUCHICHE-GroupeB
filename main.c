@@ -32,6 +32,7 @@ void displayMainMenu(void) {
     printf(">>> Votre choix : ");
 }
 
+
 /**
  * @brief Affiche le menu des filtres pour images 8 bits
  */
