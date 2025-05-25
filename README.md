@@ -13,11 +13,11 @@ Ce projet est une application de traitement d'images développée en langage C d
 - ✅ Ajustement de la luminosité
 - ✅ Binarisation (seuillage)
 - ✅ Filtres de convolution :
-    - Flou simple (box blur)
-    - Flou gaussien
-    - Détection de contours
-    - Relief (emboss)
-    - Netteté (sharpen)
+  - Flou simple (box blur)
+  - Flou gaussien
+  - Détection de contours
+  - Relief (emboss)
+  - Netteté (sharpen)
 - ✅ Égalisation d'histogramme
 
 ### Images 24 bits (couleur)
@@ -27,11 +27,11 @@ Ce projet est une application de traitement d'images développée en langage C d
 - ✅ Conversion en niveaux de gris
 - ✅ Ajustement de la luminosité
 - ✅ Filtres de convolution :
-    - Flou simple (box blur)
-    - Flou gaussien
-    - Détection de contours
-    - Relief (emboss)
-    - Netteté (sharpen)
+  - Flou simple (box blur)
+  - Flou gaussien
+  - Détection de contours
+  - Relief (emboss)
+  - Netteté (sharpen)
 - ✅ Égalisation d'histogramme (avec conversion en espace YUV)
 
 ### Interface utilisateur
@@ -224,9 +224,4 @@ Ce projet est réalisé dans un cadre pédagogique.oisir l'option 3 et sélectio
 
 ## Auteurs
 
-Projet réalisé dans le cadre du module TI202 - Algorithmique et Structures de Données
-Efrei Paris - P1/P1-INT - 2024/2025
-
-## Licence
-
-Ce projet est réalisé dans un cadre pédagogique.
+DESCHAMPS Malo et Samy AOUCHICHE, Etudiants P1 Efrei
