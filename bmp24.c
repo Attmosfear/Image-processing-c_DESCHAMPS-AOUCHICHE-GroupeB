@@ -64,8 +64,8 @@ void bmp24_readPixelValue (t_bmp24 * image, int x, int y, FILE * file) {
 }
 
 void bmp24_readPixelData (t_bmp24 * image, FILE * file) {
-    for (int x = 0; x < image->height; x++){
-        for (int y = 0; y < image->width; y++){
+    for (int y = 0; y < image->height; y++){
+        for (int x = 0; x < image->width; x++){
             bmp24_readPixelValue(image, x, y, file);
         }
     }
@@ -91,7 +91,7 @@ void bmp24_writePixelData(t_bmp24 *image, FILE *file) {
 t_bmp24 * bmp24_loadImage (const char * filename) {
     FILE * f = fopen(filename, "rb");
     if (f ==  NULL) {
-        printf("Erreur : impossoble de lire le fichier %s", filename);
+        printf("Erreur : impossible de lire le fichier %s", filename);
         return NULL;
     }
     int height = 0;
@@ -118,7 +118,7 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
 void bmp24_saveImage (t_bmp24 * img, const char * filename) {
     FILE * f = fopen(filename, "wb");
     if (f ==  NULL) {
-        printf("Erreur : impossoble de lire le fichier %s", filename);
+        printf("Erreur : impossible de d'ecrire sur le fichier %s", filename);
         return;
     }
     file_rawWrite(0, &img->header, HEADER_SIZE, 1, f);
@@ -128,72 +128,61 @@ void bmp24_saveImage (t_bmp24 * img, const char * filename) {
 }
 
 void bmp24_negative (t_bmp24 * img) {
-    for (int i = 0; i<img->height; i++) {
-        for (int j = 0; j< img->width; j++) {
-            t_pixel pixel = img->data[i][j];
-            pixel.blue = 255 - pixel.blue;
-            pixel.red = 255 - pixel.red;
-            pixel.green = 255 - pixel.green;
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            img->data[y][x].blue = 255 - img->data[y][x].blue;
+            img->data[y][x].red = 255 - img->data[y][x].red;
+            img->data[y][x].green = 255 - img->data[y][x].green;
         }
     }
 }
 
 void bmp24_brightness (t_bmp24 * img, int value) {
-    for (int i = 0; i<img->height; i++) {
-        for (int j = 0; j< img->width; j++) {
-            t_pixel pixel = img->data[i][j];
-            pixel.blue = pixel.blue+value;
-            if (pixel.blue > 255) {
-                pixel.blue = 255;
-            }
-            if (pixel.blue < 0) {
-                pixel.blue = 0;
-            }
-            pixel.red = pixel.red + value;
-            if (pixel.red > 255) {
-                pixel.red = 255;
-            }
-            if (pixel.red < 0) {
-                pixel.red = 0;
-            }
-            pixel.green = pixel.green + value;
-            if (pixel.green > 55) {
-                pixel.green = 255;
-            }
-            if (pixel.green < 0) {
-                pixel.green = 0;
-            }
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            // Rouge
+            int new_red = img->data[y][x].red + value;
+            img->data[y][x].red = (new_red > 255) ? 255 : (new_red < 0) ? 0 : new_red;
+
+            // Vert (correction du bug > 55)
+            int new_green = img->data[y][x].green + value;
+            img->data[y][x].green = (new_green > 255) ? 255 : (new_green < 0) ? 0 : new_green;
+
+            // Bleu
+            int new_blue = img->data[y][x].blue + value;
+            img->data[y][x].blue = (new_blue > 255) ? 255 : (new_blue < 0) ? 0 : new_blue;
         }
     }
 }
 
 void bmp24_grayscale(t_bmp24 * img) {
-    for (int i = 0; i<img->height; i++) {
-        for (int j = 0; j< img->width; j++) {
-            t_pixel pixel = img->data[i][j];
-            pixel.blue = pixel.red = pixel.green = ((pixel.blue + pixel.green + pixel.red)/3);
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            uint8_t gray = (img->data[y][x].red + img->data[y][x].green + img->data[y][x].blue) / 3;
+            img->data[y][x].red = gray;
+            img->data[y][x].green = gray;
+            img->data[y][x].blue = gray;
         }
     }
 }
-
 t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int kernelSize) {
-    int n = kernelSize / 2;  // Rayon du noyau
-
+    int n = kernelSize / 2;
     float sommeR = 0, sommeG = 0, sommeB = 0;
 
     for (int k = -n; k <= n; k++) {
         for (int l = -n; l <= n; l++) {
-            // Coordonnées du pixel dans l'image
             int img_y = y + k;
             int img_x = x + l;
 
-            // Coordonnées dans le kernel
-            int kernel_i = k + n;
-            int kernel_j = l + n;
+            // Vérification des limites -> ajouté a cause d'erreur
+            if (img_y >= 0 && img_y < img->height && img_x >= 0 && img_x < img->width) {
+                int kernel_i = k + n;
+                int kernel_j = l + n;
 
-            sommeR += img->data[img_y][img_x].red * kernel[kernel_i][kernel_j];
-            sommeG += img->data[img_y][img_x].green * kernel[kernel_i][kernel_j];
-            sommeB += img->data[img_y][img_x].blue * kernel[kernel_i][kernel_j];
+                sommeR += img->data[img_y][img_x].red * kernel[kernel_i][kernel_j];
+                sommeG += img->data[img_y][img_x].green * kernel[kernel_i][kernel_j];
+                sommeB += img->data[img_y][img_x].blue * kernel[kernel_i][kernel_j];
+            }
         }
     }
 
