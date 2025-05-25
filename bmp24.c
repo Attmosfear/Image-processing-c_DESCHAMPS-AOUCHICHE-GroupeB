@@ -54,13 +54,19 @@ void bmp24_free (t_bmp24 * img) {
 
 
 void bmp24_readPixelValue (t_bmp24 * image, int x, int y, FILE * file) {
-    t_pixel pixel;
+    // Lire les 3 octets BGR du fichier
+    uint8_t bgr[3];
 
     // calcule de la position du pixel dans le fichier
     uint32_t position = image->header.offset + (image->height - 1 - y) * (image->width * 3) + x * 3;
 
-    file_rawRead(position, &pixel, sizeof(t_pixel), 1,  file);
-    image->data[y][x] = pixel;
+    // Lire les 3 octets BGR
+    file_rawRead(position, bgr, sizeof(uint8_t), 3, file);
+
+    // Convertir BGR → RGB et stocker dans la structure
+    image->data[y][x].blue = bgr[0];   // B du fichier → blue de la structure
+    image->data[y][x].green = bgr[1];  // G du fichier → green de la structure
+    image->data[y][x].red = bgr[2];    // R du fichier → red de la structure
 }
 
 void bmp24_readPixelData (t_bmp24 * image, FILE * file) {
@@ -72,12 +78,19 @@ void bmp24_readPixelData (t_bmp24 * image, FILE * file) {
 }
 
 void bmp24_writePixelValue (t_bmp24 * image, int x, int y, FILE * file) {
-    t_pixel pixel = image->data[y][x];
+    // Préparer les 3 octets BGR pour l'écriture
+    uint8_t bgr[3];
 
-    // calcule de la position du pixel dans le fichier
+    // Convertir RGB → BGR
+    bgr[0] = image->data[y][x].blue;   // blue de la structure → B du fichier
+    bgr[1] = image->data[y][x].green;  // green de la structure → G du fichier
+    bgr[2] = image->data[y][x].red;    // red de la structure → R du fichier
+
+    // Calculer la position du pixel dans le fichier
     uint32_t position = image->header.offset + (image->height - 1 - y) * (image->width * 3) + x * 3;
 
-    file_rawWrite(position, &pixel, sizeof(t_pixel), 1, file);
+    // Écrire les 3 octets BGR
+    file_rawWrite(position, bgr, sizeof(uint8_t), 3, file);
 }
 
 void bmp24_writePixelData(t_bmp24 *image, FILE *file) {
@@ -89,29 +102,46 @@ void bmp24_writePixelData(t_bmp24 *image, FILE *file) {
 }
 
 t_bmp24 * bmp24_loadImage (const char * filename) {
-    FILE * f = fopen(filename, "rb");
-    if (f ==  NULL) {
-        printf("Erreur : impossible de lire le fichier %s", filename);
+    FILE * file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("Erreur : impossible de lire le fichier %s\n", filename);
         return NULL;
     }
-    int height = 0;
-    int width = 0;
-    int colorDepth = 24;
 
-    file_rawRead(BITMAP_WIDTH, &width, sizeof(int), 1, f);
-    file_rawRead(BITMAP_HEIGHT, &height, sizeof(int), 1, f);
+    // Lire les dimensions et profondeur AVANT l'allocation
+    int32_t width, height;
+    uint16_t colorDepth;
+
+    file_rawRead(BITMAP_WIDTH, &width, sizeof(int32_t), 1, file);
+    file_rawRead(BITMAP_HEIGHT, &height, sizeof(int32_t), 1, file);
+    file_rawRead(BITMAP_DEPTH, &colorDepth, sizeof(uint16_t), 1, file);
+
+    printf("DEBUG: Dimensions lues: %dx%d, %u bits\n", width, height, colorDepth);
+
+    // Vérifier que c'est du 24 bits
+    if (colorDepth != 24) {
+        printf("Erreur: Image non supportée (%u bits, besoin de 24 bits)\n", colorDepth);
+        fclose(file);
+        return NULL;
+    }
+
+    // Allouer la structure image
     t_bmp24 *image = bmp24_allocate(width, height, colorDepth);
+    if (image == NULL) {
+        printf("Erreur allocation mémoire\n");
+        fclose(file);
+        return NULL;
+    }
 
-    //Recuperation du Header et des Infos
-    file_rawRead(0, &image->header, HEADER_SIZE, 1, f);
-    file_rawRead(HEADER_SIZE, &image->header_info, INFO_SIZE, 1, f);
+    // Lire les en-têtes complets
+    file_rawRead(0, &image->header, HEADER_SIZE, 1, file);
+    file_rawRead(HEADER_SIZE, &image->header_info, INFO_SIZE, 1, file);
 
-    //Recuperation de la data
-    bmp24_readPixelData(image, f);
+    // Lire les données de l'image avec conversion BGR→RGB
+    bmp24_readPixelData(image, file);
 
-    fclose(f);
+    fclose(file);
     return image;
-
 }
 
 void bmp24_saveImage (t_bmp24 * img, const char * filename) {

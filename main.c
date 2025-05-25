@@ -53,57 +53,11 @@ void menu_traitements_24bits() {
     printf(">>> Votre choix : ");
 }
 
-void debug_print_first_pixels(t_bmp24 * img) {
-    printf("=== PREMIERS PIXELS ===\n");
-    for (int y = 0; y < 3 && y < img->height; y++) {
-        for (int x = 0; x < 3 && x < img->width; x++) {
-            printf("Pixel[%d][%d]: R=%d G=%d B=%d\n",
-                   y, x,
-                   img->data[y][x].red,
-                   img->data[y][x].green,
-                   img->data[y][x].blue);
-        }
-    }
-    printf("=======================\n");
-}
-
-void test_diagnostic() {
-    printf("=== TEST DIAGNOSTIC ===\n");
-
-    // Test 1: Chargement seul
-    t_bmp24 *img = bmp24_loadImage("flowers_color.bmp");
-    if (img == NULL) {
-        printf("❌ Erreur chargement\n");
-        return;
-    }
-
-    printf("✅ Image chargée: %dx%d\n", img->width, img->height);
-
-    // Afficher quelques pixels pour vérifier
-    debug_print_first_pixels(img);
-
-    // Test 2: Sauvegarde sans traitement
-    bmp24_saveImage(img, "diagnostic_copie.bmp");
-    printf("✅ Copie sauvegardée\n");
-
-    // Test 3: Traitement simple et sauvegarde
-    printf("Application du négatif...\n");
-    bmp24_negative(img);
-    debug_print_first_pixels(img);  // Vérifier si les pixels ont changé
-
-    bmp24_saveImage(img, "diagnostic_negative.bmp");
-    printf("✅ Négatif sauvegardé\n");
-
-    bmp24_free(img);
-    printf("======================\n");
-}
-
 int main() {
     int choix;
     char filename[256];
 
     printf("Bienvenue dans le programme de traitement d'images BMP!\n");
-    test_complete_debug();
 
     while (1) {
         menu_principal();

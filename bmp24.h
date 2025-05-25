@@ -15,7 +15,7 @@
 #define BITMAP_WIDTH 0x12 // offset 18
 #define BITMAP_HEIGHT 0x16 // offset 22
 #define BITMAP_DEPTH 0x1C // offset 28
-#define BITMAP_SIZE_RAW 0
+#define BITMAP_SIZE_RAW 0x22 // offset 34
 
 // Constante pour le type de fichier BMP
 #define BMP_TYPE 0x4D42 // 'BM' en hexadécimal
@@ -51,9 +51,9 @@ typedef struct {
 } t_bmp_info;
 
 typedef struct {
-    uint8_t blue;
-    uint8_t green;
     uint8_t red;
+    uint8_t green;
+    uint8_t blue;
 } t_pixel;
 
 typedef struct {
