@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @author Malo DESCHAMPS et Samy AOUCHICHE
+ * @author Projet TI202
  * @brief Programme principal pour le traitement d'images BMP
  * @date 2025
  */
@@ -27,7 +27,8 @@ void displayMainMenu(void) {
     printf("2. Sauvegarder une image\n");
     printf("3. Appliquer un filtre\n");
     printf("4. Afficher les informations de l'image\n");
-    printf("5. Quitter\n");
+    printf("5. Lancer les tests automatiques\n");
+    printf("6. Quitter\n");
     printf(">>> Votre choix : ");
 }
 
@@ -310,6 +311,167 @@ void displayImageInfo(void) {
 }
 
 /**
+ * @brief Lance les tests automatiques
+ */
+void launchAutomaticTests(void) {
+    printf("\n=== LANCEMENT DES TESTS AUTOMATIQUES ===\n");
+
+    // Vérifier l'existence des images de test
+    FILE* test8 = fopen("barbara_gray.bmp", "rb");
+    FILE* test24 = fopen("flowers_color.bmp", "rb");
+
+    if (!test8 || !test24) {
+        printf("Erreur : Images de test manquantes !\n");
+        printf("Assurez-vous que les fichiers suivants sont présents :\n");
+        printf("- barbara_gray.bmp (image 8 bits)\n");
+        printf("- flowers_color.bmp (image 24 bits)\n");
+        if (test8) fclose(test8);
+        if (test24) fclose(test24);
+        return;
+    }
+    fclose(test8);
+    fclose(test24);
+
+    // Créer les dossiers de sortie
+    #ifdef _WIN32
+        system("if not exist tests_8bits mkdir tests_8bits");
+        system("if not exist tests_24bits mkdir tests_24bits");
+    #else
+        system("mkdir -p tests_8bits");
+        system("mkdir -p tests_24bits");
+    #endif
+
+    // Tests pour les images 8 bits
+    printf("\n--- Tests images 8 bits ---\n");
+    t_bmp8* img8 = bmp8_loadImage("barbara_gray.bmp");
+    if (img8) {
+        // Test 1: Copie
+        printf("1. Copie simple... ");
+        bmp8_saveImage("tests_8bits/01_copie.bmp", img8);
+        printf("OK\n");
+
+        // Test 2: Négatif
+        printf("2. Négatif... ");
+        t_bmp8* temp8 = bmp8_loadImage("barbara_gray.bmp");
+        bmp8_negative(temp8);
+        bmp8_saveImage("tests_8bits/02_negatif.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        // Test 3: Luminosité +50
+        printf("3. Luminosité +50... ");
+        temp8 = bmp8_loadImage("barbara_gray.bmp");
+        bmp8_brightness(temp8, 50);
+        bmp8_saveImage("tests_8bits/03_luminosite_plus50.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        // Test 4: Binarisation
+        printf("4. Binarisation (seuil 128)... ");
+        temp8 = bmp8_loadImage("barbara_gray.bmp");
+        bmp8_threshold(temp8, 128);
+        bmp8_saveImage("tests_8bits/04_binarisation.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        // Test 5: Flou
+        printf("5. Flou simple... ");
+        temp8 = bmp8_loadImage("barbara_gray.bmp");
+        float** kernel = createBoxBlurKernel();
+        bmp8_applyFilter(temp8, kernel, 3);
+        freeFilterKernel(kernel, 3);
+        bmp8_saveImage("tests_8bits/05_flou.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        // Test 6: Contours
+        printf("6. Détection de contours... ");
+        temp8 = bmp8_loadImage("barbara_gray.bmp");
+        kernel = createOutlineKernel();
+        bmp8_applyFilter(temp8, kernel, 3);
+        freeFilterKernel(kernel, 3);
+        bmp8_saveImage("tests_8bits/06_contours.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        // Test 7: Égalisation
+        printf("7. Égalisation d'histogramme... ");
+        temp8 = bmp8_loadImage("barbara_gray.bmp");
+        bmp8_equalize(temp8);
+        bmp8_saveImage("tests_8bits/07_egalisation.bmp", temp8);
+        bmp8_free(temp8);
+        printf("OK\n");
+
+        bmp8_free(img8);
+    }
+
+    // Tests pour les images 24 bits
+    printf("\n--- Tests images 24 bits ---\n");
+    t_bmp24* img24 = bmp24_loadImage("flowers_color.bmp");
+    if (img24) {
+        // Test 1: Copie
+        printf("1. Copie simple... ");
+        bmp24_saveImage(img24, "tests_24bits/01_copie.bmp");
+        printf("OK\n");
+
+        // Test 2: Négatif
+        printf("2. Négatif... ");
+        t_bmp24* temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_negative(temp24);
+        bmp24_saveImage(temp24, "tests_24bits/02_negatif.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        // Test 3: Niveaux de gris
+        printf("3. Niveaux de gris... ");
+        temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_grayscale(temp24);
+        bmp24_saveImage(temp24, "tests_24bits/03_niveaux_gris.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        // Test 4: Luminosité
+        printf("4. Luminosité +50... ");
+        temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_brightness(temp24, 50);
+        bmp24_saveImage(temp24, "tests_24bits/04_luminosite.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        // Test 5: Flou
+        printf("5. Flou gaussien... ");
+        temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_gaussianBlur(temp24);
+        bmp24_saveImage(temp24, "tests_24bits/05_flou_gaussien.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        // Test 6: Contours
+        printf("6. Détection de contours... ");
+        temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_outline(temp24);
+        bmp24_saveImage(temp24, "tests_24bits/06_contours.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        // Test 7: Égalisation
+        printf("7. Égalisation d'histogramme... ");
+        temp24 = bmp24_loadImage("flowers_color.bmp");
+        bmp24_equalize(temp24);
+        bmp24_saveImage(temp24, "tests_24bits/07_egalisation.bmp");
+        bmp24_free(temp24);
+        printf("OK\n");
+
+        bmp24_free(img24);
+    }
+
+    printf("\n=== TESTS TERMINÉS ===\n");
+    printf("Résultats disponibles dans :\n");
+    printf("- tests_8bits/\n");
+    printf("- tests_24bits/\n");
+}
+
+/**
  * @brief Fonction principale
  */
 int main(void) {
@@ -343,6 +505,10 @@ int main(void) {
                 break;
 
             case 5:
+                launchAutomaticTests();
+                break;
+
+            case 6:
                 running = 0;
                 printf("Au revoir !\n");
                 break;
