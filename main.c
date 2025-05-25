@@ -7,6 +7,7 @@
 #include "bmp8.h"
 #include "bmp24.h"
 #include "kernel_loader.h"
+#include "Debug.c"
 
 // Variables globales pour les images
 t_bmp8 *current_image8 = NULL;
@@ -102,7 +103,7 @@ int main() {
     char filename[256];
 
     printf("Bienvenue dans le programme de traitement d'images BMP!\n");
-    test_diagnostic();
+    test_complete_debug();
 
     while (1) {
         menu_principal();

@@ -96,11 +96,10 @@ t_bmp24 * bmp24_loadImage (const char * filename) {
     }
     int height = 0;
     int width = 0;
-    int colorDepth = 0;
+    int colorDepth = 24;
 
     file_rawRead(BITMAP_WIDTH, &width, sizeof(int), 1, f);
     file_rawRead(BITMAP_HEIGHT, &height, sizeof(int), 1, f);
-    file_rawRead(BITMAP_DEPTH, &colorDepth, sizeof(int), 1, f);
     t_bmp24 *image = bmp24_allocate(width, height, colorDepth);
 
     //Recuperation du Header et des Infos
