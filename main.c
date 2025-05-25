@@ -204,46 +204,46 @@ int main() {
                             int value;
                             printf("Valeur de luminosité (-255 à 255) : ");
                             scanf("%d", &value);
-                            // bmp24_brightness(current_image24, value); // À implémenter
-                            printf("Fonction bmp24_brightness pas encore implémentée!\n");
+                            bmp24_brightness(current_image24, value);
+                            printf("Filtre brightness appliqué!\n");
                             break;
                         }
                         case 3:
-                            // bmp24_grayscale(current_image24); // À implémenter
-                            printf("Fonction bmp24_grayscale pas encore implémentée!\n");
+                            bmp24_grayscale(current_image24);
+                            printf("Filtre grayscale appliqué!\n");
                             break;
                         case 4: {
                             float **kernel = get_box_blur_kernel();
-                            // bmp24_boxBlur(current_image24); // À implémenter avec bmp24_convolution
-                            printf("Fonction bmp24_boxBlur pas encore implémentée!\n");
+                            bmp24_boxBlur(current_image24);
+                            printf("Filtre Box Blur appliqué!\n");
                             free_kernel(kernel, 3);
                             break;
                         }
                         case 5: {
                             float **kernel = get_gaussian_blur_kernel();
-                            // bmp24_gaussianBlur(current_image24); // À implémenter avec bmp24_convolution
-                            printf("Fonction bmp24_gaussianBlur pas encore implémentée!\n");
+                            bmp24_gaussianBlur(current_image24);
+                            printf("Filtre Gaussian Blur appliqué!\n");
                             free_kernel(kernel, 3);
                             break;
                         }
                         case 6: {
                             float **kernel = get_outline_kernel();
-                            // bmp24_outline(current_image24); // À implémenter avec bmp24_convolution
-                            printf("Fonction bmp24_outline pas encore implémentée!\n");
+                            bmp24_outline(current_image24);
+                            printf("Filtre Outline appliqué!\n");
                             free_kernel(kernel, 3);
                             break;
                         }
                         case 7: {
                             float **kernel = get_emboss_kernel();
-                            // bmp24_emboss(current_image24); // À implémenter avec bmp24_convolution
-                            printf("Fonction bmp24_emboss pas encore implémentée!\n");
+                            bmp24_emboss(current_image24);
+                            printf("Filtre Emboss appliqué!\n");
                             free_kernel(kernel, 3);
                             break;
                         }
                         case 8: {
                             float **kernel = get_sharpen_kernel();
-                            // bmp24_sharpen(current_image24); // À implémenter avec bmp24_convolution
-                            printf("Fonction bmp24_sharpen pas encore implémentée!\n");
+                            bmp24_sharpen(current_image24);
+                            printf("Filtre Sharpen appliqué!\n");
                             free_kernel(kernel, 3);
                             break;
                         }

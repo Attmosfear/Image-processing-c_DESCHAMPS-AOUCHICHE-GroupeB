@@ -4,11 +4,6 @@
 
 #include "bmp24.h"
 
-#include <stdatomic.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 void file_rawRead (uint32_t position, void * buffer, uint32_t size, size_t n, FILE * file) {
     fseek(file, position, SEEK_SET);
     fread(buffer, size, n, file);
@@ -172,6 +167,15 @@ void bmp24_brightness (t_bmp24 * img, int value) {
     }
 }
 
+void bmp24_grayscale(t_bmp24 * img) {
+    for (int i = 0; i<img->height; i++) {
+        for (int j = 0; j< img->width; j++) {
+            t_pixel pixel = img->data[i][j];
+            pixel.blue = pixel.red = pixel.green = ((pixel.blue + pixel.green + pixel.red)/3);
+        }
+    }
+}
+
 t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int kernelSize) {
     int n = kernelSize / 2;  // Rayon du noyau
 
@@ -199,4 +203,184 @@ t_pixel bmp24_convolution (t_bmp24 * img, int x, int y, float ** kernel, int ker
     result.blue = (uint8_t)((sommeB < 0) ? 0 : (sommeB > 255) ? 255 : sommeB);
 
     return result;
+}
+
+void bmp24_boxBlur(t_bmp24 * img) {
+    if (img == NULL || img->data == NULL) {
+        printf("Erreur: image invalide\n");
+        return;
+    }
+
+    // Créer le noyau box blur
+    float **kernel = get_box_blur_kernel();
+
+    // Créer une copie temporaire de l'image pour éviter de modifier les pixels pendant le calcul
+    t_pixel **temp_data = bmp24_allocateDataPixels(img->width, img->height);
+    if (temp_data == NULL) {
+        printf("Erreur: allocation mémoire échouée\n");
+        free_kernel(kernel, 3);
+        return;
+    }
+
+    // Copier les données originales
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            temp_data[y][x] = img->data[y][x];
+        }
+    }
+
+    // Appliquer le filtre (éviter les bords)
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+
+    // Libérer la mémoire
+    bmp24_freeDataPixels(temp_data, img->height);
+    free_kernel(kernel, 3);
+}
+
+void bmp24_gaussianBlur(t_bmp24 * img) {
+    if (img == NULL || img->data == NULL) {
+        printf("Erreur: image invalide\n");
+        return;
+    }
+
+    // Créer le noyau gaussian blur
+    float **kernel = get_gaussian_blur_kernel();
+
+    // Créer une copie temporaire de l'image
+    t_pixel **temp_data = bmp24_allocateDataPixels(img->width, img->height);
+    if (temp_data == NULL) {
+        printf("Erreur: allocation mémoire échouée\n");
+        free_kernel(kernel, 3);
+        return;
+    }
+
+    // Copier les données originales
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            temp_data[y][x] = img->data[y][x];
+        }
+    }
+
+    // Appliquer le filtre (éviter les bords)
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+
+    // Libérer la mémoire
+    bmp24_freeDataPixels(temp_data, img->height);
+    free_kernel(kernel, 3);
+}
+
+void bmp24_outline(t_bmp24 * img) {
+    if (img == NULL || img->data == NULL) {
+        printf("Erreur: image invalide\n");
+        return;
+    }
+
+    // Créer le noyau outline
+    float **kernel = get_outline_kernel();
+
+    // Créer une copie temporaire de l'image
+    t_pixel **temp_data = bmp24_allocateDataPixels(img->width, img->height);
+    if (temp_data == NULL) {
+        printf("Erreur: allocation mémoire échouée\n");
+        free_kernel(kernel, 3);
+        return;
+    }
+
+    // Copier les données originales
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            temp_data[y][x] = img->data[y][x];
+        }
+    }
+
+    // Appliquer le filtre (éviter les bords)
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+
+    // Libérer la mémoire
+    bmp24_freeDataPixels(temp_data, img->height);
+    free_kernel(kernel, 3);
+}
+
+void bmp24_emboss(t_bmp24 * img) {
+    if (img == NULL || img->data == NULL) {
+        printf("Erreur: image invalide\n");
+        return;
+    }
+
+    // Créer le noyau emboss
+    float **kernel = get_emboss_kernel();
+
+    // Créer une copie temporaire de l'image
+    t_pixel **temp_data = bmp24_allocateDataPixels(img->width, img->height);
+    if (temp_data == NULL) {
+        printf("Erreur: allocation mémoire échouée\n");
+        free_kernel(kernel, 3);
+        return;
+    }
+
+    // Copier les données originales
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            temp_data[y][x] = img->data[y][x];
+        }
+    }
+
+    // Appliquer le filtre (éviter les bords)
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+
+    // Libérer la mémoire
+    bmp24_freeDataPixels(temp_data, img->height);
+    free_kernel(kernel, 3);
+}
+
+void bmp24_sharpen(t_bmp24 * img) {
+    if (img == NULL || img->data == NULL) {
+        printf("Erreur: image invalide\n");
+        return;
+    }
+
+    // Créer le noyau sharpen
+    float **kernel = get_sharpen_kernel();
+
+    // Créer une copie temporaire de l'image
+    t_pixel **temp_data = bmp24_allocateDataPixels(img->width, img->height);
+    if (temp_data == NULL) {
+        printf("Erreur: allocation mémoire échouée\n");
+        free_kernel(kernel, 3);
+        return;
+    }
+
+    // Copier les données originales
+    for (int y = 0; y < img->height; y++) {
+        for (int x = 0; x < img->width; x++) {
+            temp_data[y][x] = img->data[y][x];
+        }
+    }
+
+    // Appliquer le filtre (éviter les bords)
+    for (int y = 1; y < img->height - 1; y++) {
+        for (int x = 1; x < img->width - 1; x++) {
+            img->data[y][x] = bmp24_convolution(img, x, y, kernel, 3);
+        }
+    }
+
+    // Libérer la mémoire
+    bmp24_freeDataPixels(temp_data, img->height);
+    free_kernel(kernel, 3);
 }
