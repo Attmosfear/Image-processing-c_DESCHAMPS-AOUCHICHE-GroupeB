@@ -1,316 +1,364 @@
-//
-// Created by desch on 21/03/2025.
-//
+/**
+ * @file main.c
+ * @author Malo DESCHAMPS et Samy AOUCHICHE
+ * @brief Programme principal pour le traitement d'images BMP
+ * @date 2025
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "bmp8.h"
 #include "bmp24.h"
-#include "kernel_loader.h"
-#include "Debug.c"
+#include "filters.h"
 
-// Variables globales pour les images
-t_bmp8 *current_image8 = NULL;
-t_bmp24 *current_image24 = NULL;
-int image_type = 0; // 0 = aucune, 8 = image 8 bits, 24 = image 24 bits
+// Variables globales pour stocker les images courantes
+t_bmp8* currentImage8 = NULL;
+t_bmp24* currentImage24 = NULL;
+int imageType = 0; // 0: pas d'image, 8: image 8 bits, 24: image 24 bits
 
-void menu_principal() {
-    printf("\n=== TRAITEMENT D'IMAGES BMP ===\n");
+/**
+ * @brief Affiche le menu principal
+ */
+void displayMainMenu(void) {
+    printf("\n============ TRAITEMENT D'IMAGES BMP ============\n");
+    printf("Veuillez choisir une option :\n");
     printf("1. Ouvrir une image\n");
     printf("2. Sauvegarder une image\n");
-    printf("3. Appliquer un traitement\n");
+    printf("3. Appliquer un filtre\n");
     printf("4. Afficher les informations de l'image\n");
     printf("5. Quitter\n");
     printf(">>> Votre choix : ");
 }
 
-void menu_traitements_8bits() {
-    printf("\n=== TRAITEMENTS IMAGE 8 BITS ===\n");
+/**
+ * @brief Affiche le menu des filtres pour images 8 bits
+ */
+void displayFilter8Menu(void) {
+    printf("\nVeuillez choisir un filtre :\n");
     printf("1. Négatif\n");
     printf("2. Luminosité\n");
-    printf("3. Binarisation (threshold)\n");
-    printf("4. Filtre Box Blur\n");
-    printf("5. Filtre Gaussian Blur\n");
-    printf("6. Filtre Contours (Outline)\n");
-    printf("7. Filtre Relief (Emboss)\n");
-    printf("8. Filtre Netteté (Sharpen)\n");
-    printf("9. Retourner au menu principal\n");
+    printf("3. Binarisation\n");
+    printf("4. Flou\n");
+    printf("5. Flou gaussien\n");
+    printf("6. Netteté\n");
+    printf("7. Contours\n");
+    printf("8. Relief\n");
+    printf("9. Égalisation d'histogramme\n");
+    printf("10. Retourner au menu précédent\n");
     printf(">>> Votre choix : ");
 }
 
-void menu_traitements_24bits() {
-    printf("\n=== TRAITEMENTS IMAGE 24 BITS ===\n");
+/**
+ * @brief Affiche le menu des filtres pour images 24 bits
+ */
+void displayFilter24Menu(void) {
+    printf("\nVeuillez choisir un filtre :\n");
     printf("1. Négatif\n");
-    printf("2. Luminosité\n");
-    printf("3. Conversion en niveaux de gris\n");
-    printf("4. Filtre Box Blur\n");
-    printf("5. Filtre Gaussian Blur\n");
-    printf("6. Filtre Contours (Outline)\n");
-    printf("7. Filtre Relief (Emboss)\n");
-    printf("8. Filtre Netteté (Sharpen)\n");
-    printf("9. Test convolution sur un pixel\n");
-    printf("10. Retourner au menu principal\n");
+    printf("2. Niveaux de gris\n");
+    printf("3. Luminosité\n");
+    printf("4. Flou\n");
+    printf("5. Flou gaussien\n");
+    printf("6. Netteté\n");
+    printf("7. Contours\n");
+    printf("8. Relief\n");
+    printf("9. Égalisation d'histogramme\n");
+    printf("10. Retourner au menu précédent\n");
     printf(">>> Votre choix : ");
 }
 
-int main() {
-    int choix;
+/**
+ * @brief Ouvre une image BMP
+ */
+void openImage(void) {
     char filename[256];
+    printf("Chemin du fichier : ");
+    scanf("%255s", filename);
 
-    printf("Bienvenue dans le programme de traitement d'images BMP!\n");
+    // Libérer l'image précédente si elle existe
+    if (currentImage8) {
+        bmp8_free(currentImage8);
+        currentImage8 = NULL;
+    }
+    if (currentImage24) {
+        bmp24_free(currentImage24);
+        currentImage24 = NULL;
+    }
 
-    while (1) {
-        menu_principal();
-        scanf("%d", &choix);
+    // Essayer d'abord comme image 8 bits
+    currentImage8 = bmp8_loadImage(filename);
+    if (currentImage8) {
+        imageType = 8;
+        printf("Image 8 bits chargée avec succès !\n");
+        return;
+    }
 
-        switch (choix) {
-            case 1: // Ouvrir une image
-                printf("Chemin du fichier : ");
-                scanf("%s", filename);
+    // Si échec, essayer comme image 24 bits
+    currentImage24 = bmp24_loadImage(filename);
+    if (currentImage24) {
+        imageType = 24;
+        printf("Image 24 bits chargée avec succès !\n");
+        return;
+    }
 
-                // Libérer l'image précédente si elle existe
-                if (current_image8 != NULL) {
-                    bmp8_free(current_image8);
-                    current_image8 = NULL;
-                }
-                if (current_image24 != NULL) {
-                    bmp24_free(current_image24);
-                    current_image24 = NULL;
-                }
+    imageType = 0;
+    printf("Erreur : Impossible de charger l'image\n");
+}
 
-                // Essayer de charger comme image 8 bits d'abord
-                current_image8 = bmp8_loadImage(filename);
-                if (current_image8 != NULL) {
-                    if (current_image8->colorDepth == 8) {
-                        image_type = 8;
-                        printf("Image 8 bits chargée avec succès!\n");
-                    } else {
-                        bmp8_free(current_image8);
-                        current_image8 = NULL;
-                        // Essayer de charger comme image 24 bits
-                        current_image24 = bmp24_loadImage(filename);
-                        if (current_image24 != NULL) {
-                            image_type = 24;
-                            printf("Image 24 bits chargée avec succès!\n");
-                        } else {
-                            printf("Erreur lors du chargement de l'image.\n");
-                            image_type = 0;
-                        }
-                    }
-                } else {
-                    printf("Erreur lors du chargement de l'image.\n");
-                    image_type = 0;
-                }
+/**
+ * @brief Sauvegarde l'image courante
+ */
+void saveImage(void) {
+    if (imageType == 0) {
+        printf("Erreur : Aucune image chargée\n");
+        return;
+    }
+
+    char filename[256];
+    printf("Chemin du fichier : ");
+    scanf("%255s", filename);
+
+    if (imageType == 8 && currentImage8) {
+        bmp8_saveImage(filename, currentImage8);
+    } else if (imageType == 24 && currentImage24) {
+        bmp24_saveImage(currentImage24, filename);
+    }
+}
+
+/**
+ * @brief Applique un filtre sur l'image 8 bits
+ */
+void applyFilter8(void) {
+    int choice;
+    float** kernel;
+
+    displayFilter8Menu();
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1: // Négatif
+            bmp8_negative(currentImage8);
+            printf("Filtre négatif appliqué avec succès !\n");
+            break;
+
+        case 2: // Luminosité
+            {
+                int value;
+                printf("Valeur de luminosité (-255 à 255) : ");
+                scanf("%d", &value);
+                bmp8_brightness(currentImage8, value);
+                printf("Luminosité ajustée avec succès !\n");
+            }
+            break;
+
+        case 3: // Binarisation
+            {
+                int threshold;
+                printf("Valeur de seuil (0 à 255) : ");
+                scanf("%d", &threshold);
+                bmp8_threshold(currentImage8, threshold);
+                printf("Binarisation appliquée avec succès !\n");
+            }
+            break;
+
+        case 4: // Flou
+            kernel = createBoxBlurKernel();
+            bmp8_applyFilter(currentImage8, kernel, 3);
+            freeFilterKernel(kernel, 3);
+            printf("Filtre flou appliqué avec succès !\n");
+            break;
+
+        case 5: // Flou gaussien
+            kernel = createGaussianBlurKernel();
+            bmp8_applyFilter(currentImage8, kernel, 3);
+            freeFilterKernel(kernel, 3);
+            printf("Filtre flou gaussien appliqué avec succès !\n");
+            break;
+
+        case 6: // Netteté
+            kernel = createSharpenKernel();
+            bmp8_applyFilter(currentImage8, kernel, 3);
+            freeFilterKernel(kernel, 3);
+            printf("Filtre de netteté appliqué avec succès !\n");
+            break;
+
+        case 7: // Contours
+            kernel = createOutlineKernel();
+            bmp8_applyFilter(currentImage8, kernel, 3);
+            freeFilterKernel(kernel, 3);
+            printf("Filtre de contours appliqué avec succès !\n");
+            break;
+
+        case 8: // Relief
+            kernel = createEmbossKernel();
+            bmp8_applyFilter(currentImage8, kernel, 3);
+            freeFilterKernel(kernel, 3);
+            printf("Filtre de relief appliqué avec succès !\n");
+            break;
+
+        case 9: // Égalisation d'histogramme
+            bmp8_equalize(currentImage8);
+            printf("Égalisation d'histogramme appliquée avec succès !\n");
+            break;
+
+        case 10: // Retour
+            return;
+
+        default:
+            printf("Choix invalide\n");
+    }
+}
+
+/**
+ * @brief Applique un filtre sur l'image 24 bits
+ */
+void applyFilter24(void) {
+    int choice;
+
+    displayFilter24Menu();
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1: // Négatif
+            bmp24_negative(currentImage24);
+            printf("Filtre négatif appliqué avec succès !\n");
+            break;
+
+        case 2: // Niveaux de gris
+            bmp24_grayscale(currentImage24);
+            printf("Conversion en niveaux de gris appliquée avec succès !\n");
+            break;
+
+        case 3: // Luminosité
+            {
+                int value;
+                printf("Valeur de luminosité (-255 à 255) : ");
+                scanf("%d", &value);
+                bmp24_brightness(currentImage24, value);
+                printf("Luminosité ajustée avec succès !\n");
+            }
+            break;
+
+        case 4: // Flou
+            bmp24_boxBlur(currentImage24);
+            printf("Filtre flou appliqué avec succès !\n");
+            break;
+
+        case 5: // Flou gaussien
+            bmp24_gaussianBlur(currentImage24);
+            printf("Filtre flou gaussien appliqué avec succès !\n");
+            break;
+
+        case 6: // Netteté
+            bmp24_sharpen(currentImage24);
+            printf("Filtre de netteté appliqué avec succès !\n");
+            break;
+
+        case 7: // Contours
+            bmp24_outline(currentImage24);
+            printf("Filtre de contours appliqué avec succès !\n");
+            break;
+
+        case 8: // Relief
+            bmp24_emboss(currentImage24);
+            printf("Filtre de relief appliqué avec succès !\n");
+            break;
+
+        case 9: // Égalisation d'histogramme
+            bmp24_equalize(currentImage24);
+            printf("Égalisation d'histogramme appliquée avec succès !\n");
+            break;
+
+        case 10: // Retour
+            return;
+
+        default:
+            printf("Choix invalide\n");
+    }
+}
+
+/**
+ * @brief Applique un filtre sur l'image courante
+ */
+void applyFilter(void) {
+    if (imageType == 0) {
+        printf("Erreur : Aucune image chargée\n");
+        return;
+    }
+
+    if (imageType == 8) {
+        applyFilter8();
+    } else if (imageType == 24) {
+        applyFilter24();
+    }
+}
+
+/**
+ * @brief Affiche les informations de l'image courante
+ */
+void displayImageInfo(void) {
+    if (imageType == 0) {
+        printf("Erreur : Aucune image chargée\n");
+        return;
+    }
+
+    if (imageType == 8 && currentImage8) {
+        bmp8_printInfo(currentImage8);
+    } else if (imageType == 24 && currentImage24) {
+        bmp24_printInfo(currentImage24);
+    }
+}
+
+/**
+ * @brief Fonction principale
+ */
+int main(void) {
+    int choice;
+    int running = 1;
+
+    printf("=================================================\n");
+    printf("   PROGRAMME DE TRAITEMENT D'IMAGES BMP\n");
+    printf("   Projet TI202 - Algorithmique et Structures\n");
+    printf("=================================================\n");
+
+    while (running) {
+        displayMainMenu();
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                openImage();
                 break;
 
-            case 2: // Sauvegarder une image
-                if (image_type == 0) {
-                    printf("Aucune image chargée!\n");
-                    break;
-                }
-                printf("Nom du fichier de sortie : ");
-                scanf("%s", filename);
-
-                if (image_type == 8) {
-                    bmp8_saveImage(filename, current_image8);
-                } else if (image_type == 24) {
-                    bmp24_saveImage(current_image24, filename);
-                }
-                printf("Image sauvegardée avec succès!\n");
+            case 2:
+                saveImage();
                 break;
 
-            case 3: // Appliquer un traitement
-                if (image_type == 0) {
-                    printf("Aucune image chargée!\n");
-                    break;
-                }
-
-                if (image_type == 8) {
-                    int choix_traitement;
-                    menu_traitements_8bits();
-                    scanf("%d", &choix_traitement);
-
-                    switch (choix_traitement) {
-                        case 1:
-                            bmp8_negative(current_image8);
-                            printf("Filtre négatif appliqué!\n");
-                            break;
-                        case 2: {
-                            int value;
-                            printf("Valeur de luminosité (-255 à 255) : ");
-                            scanf("%d", &value);
-                            bmp8_brightness(current_image8, value);
-                            printf("Luminosité modifiée!\n");
-                            break;
-                        }
-                        case 3: {
-                            int threshold;
-                            printf("Seuil de binarisation (0-255) : ");
-                            scanf("%d", &threshold);
-                            bmp8_threshold(current_image8, threshold);
-                            printf("Binarisation appliquée!\n");
-                            break;
-                        }
-                        case 4: {
-                            float **kernel = get_box_blur_kernel();
-                            bmp8_applyFilter(current_image8, kernel, 3);
-                            free_kernel(kernel, 3);
-                            printf("Filtre Box Blur appliqué!\n");
-                            break;
-                        }
-                        case 5: {
-                            float **kernel = get_gaussian_blur_kernel();
-                            bmp8_applyFilter(current_image8, kernel, 3);
-                            free_kernel(kernel, 3);
-                            printf("Filtre Gaussian Blur appliqué!\n");
-                            break;
-                        }
-                        case 6: {
-                            float **kernel = get_outline_kernel();
-                            bmp8_applyFilter(current_image8, kernel, 3);
-                            free_kernel(kernel, 3);
-                            printf("Filtre Contours appliqué!\n");
-                            break;
-                        }
-                        case 7: {
-                            float **kernel = get_emboss_kernel();
-                            bmp8_applyFilter(current_image8, kernel, 3);
-                            free_kernel(kernel, 3);
-                            printf("Filtre Relief appliqué!\n");
-                            break;
-                        }
-                        case 8: {
-                            float **kernel = get_sharpen_kernel();
-                            bmp8_applyFilter(current_image8, kernel, 3);
-                            free_kernel(kernel, 3);
-                            printf("Filtre Netteté appliqué!\n");
-                            break;
-                        }
-                        case 9:
-                            break;
-                        default:
-                            printf("Choix invalide!\n");
-                    }
-                } else if (image_type == 24) {
-                    int choix_traitement;
-                    menu_traitements_24bits();
-                    scanf("%d", &choix_traitement);
-
-                    switch (choix_traitement) {
-                        case 1:
-                            bmp24_negative(current_image24);
-                            printf("Filtre négatif appliqué!\n");
-                            break;
-                        case 2: {
-                            int value;
-                            printf("Valeur de luminosité (-255 à 255) : ");
-                            scanf("%d", &value);
-                            bmp24_brightness(current_image24, value);
-                            printf("Filtre brightness appliqué!\n");
-                            break;
-                        }
-                        case 3:
-                            bmp24_grayscale(current_image24);
-                            printf("Filtre grayscale appliqué!\n");
-                            break;
-                        case 4: {
-                            float **kernel = get_box_blur_kernel();
-                            bmp24_boxBlur(current_image24);
-                            printf("Filtre Box Blur appliqué!\n");
-                            free_kernel(kernel, 3);
-                            break;
-                        }
-                        case 5: {
-                            float **kernel = get_gaussian_blur_kernel();
-                            bmp24_gaussianBlur(current_image24);
-                            printf("Filtre Gaussian Blur appliqué!\n");
-                            free_kernel(kernel, 3);
-                            break;
-                        }
-                        case 6: {
-                            float **kernel = get_outline_kernel();
-                            bmp24_outline(current_image24);
-                            printf("Filtre Outline appliqué!\n");
-                            free_kernel(kernel, 3);
-                            break;
-                        }
-                        case 7: {
-                            float **kernel = get_emboss_kernel();
-                            bmp24_emboss(current_image24);
-                            printf("Filtre Emboss appliqué!\n");
-                            free_kernel(kernel, 3);
-                            break;
-                        }
-                        case 8: {
-                            float **kernel = get_sharpen_kernel();
-                            bmp24_sharpen(current_image24);
-                            printf("Filtre Sharpen appliqué!\n");
-                            free_kernel(kernel, 3);
-                            break;
-                        }
-                        case 9: {
-                            // Test de la fonction de convolution sur un pixel
-                            int test_x, test_y;
-                            printf("Coordonnées du pixel à tester (x y) : ");
-                            scanf("%d %d", &test_x, &test_y);
-
-                            // Vérifier que les coordonnées sont valides
-                            if (test_x >= 1 && test_x < current_image24->width - 1 &&
-                                test_y >= 1 && test_y < current_image24->height - 1) {
-
-                                printf("Pixel original à (%d,%d): R=%d G=%d B=%d\n",
-                                       test_x, test_y,
-                                       current_image24->data[test_y][test_x].red,
-                                       current_image24->data[test_y][test_x].green,
-                                       current_image24->data[test_y][test_x].blue);
-
-                                float **kernel = get_box_blur_kernel();
-                                t_pixel result = bmp24_convolution(current_image24, test_x, test_y, kernel, 3);
-
-                                printf("Pixel après convolution Box Blur: R=%d G=%d B=%d\n",
-                                       result.red, result.green, result.blue);
-
-                                free_kernel(kernel, 3);
-                            } else {
-                                printf("Coordonnées invalides! Utilisez des valeurs entre (1,1) et (%d,%d)\n",
-                                       current_image24->width-2, current_image24->height-2);
-                            }
-                            break;
-                        }
-                        case 10:
-                            break;
-                        default:
-                            printf("Choix invalide!\n");
-                    }
-                }
+            case 3:
+                applyFilter();
                 break;
 
-            case 4: // Afficher les informations
-                if (image_type == 8 && current_image8 != NULL) {
-                    bmp8_printInfo(current_image8);
-                } else if (image_type == 24 && current_image24 != NULL) {
-                    printf("Image Info (24 bits):\n");
-                    printf("\tWidth: %d\n", current_image24->width);
-                    printf("\tHeight: %d\n", current_image24->height);
-                    printf("\tColor Depth: %d\n", current_image24->colorDepth);
-                } else {
-                    printf("Aucune image chargée!\n");
-                }
+            case 4:
+                displayImageInfo();
                 break;
 
-            case 5: // Quitter
-                // Libérer la mémoire avant de quitter
-                if (current_image8 != NULL) {
-                    bmp8_free(current_image8);
-                }
-                if (current_image24 != NULL) {
-                    bmp24_free(current_image24);
-                }
-                printf("Au revoir!\n");
-                return 0;
+            case 5:
+                running = 0;
+                printf("Au revoir !\n");
+                break;
 
             default:
-                printf("Choix invalide!\n");
+                printf("Choix invalide. Veuillez réessayer.\n");
         }
     }
+
+    // Libérer la mémoire avant de quitter
+    if (currentImage8) {
+        bmp8_free(currentImage8);
+    }
+    if (currentImage24) {
+        bmp24_free(currentImage24);
+    }
+
+    return 0;
 }
