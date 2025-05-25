@@ -17,6 +17,7 @@ t_bmp8* currentImage8 = NULL;
 t_bmp24* currentImage24 = NULL;
 int imageType = 0; // 0: pas d'image, 8: image 8 bits, 24: image 24 bits
 
+
 /**
  * @brief Affiche le menu principal
  */
